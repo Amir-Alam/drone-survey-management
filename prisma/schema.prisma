@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Drone {
+  id  String  @id @default(cuid())
+  name  String
+  status  DroneStatus  @default(AVAILABLE)
+  location  Json
+  lastSeenAt  DateTime  @updatedAt
+  missions Mission[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+}
+
+model Mission {
+  id            String         @id @default(cuid())
+  name          String
+  status        MissionStatus  @default(PLANNED)
+  droneId       String
+  drone         Drone          @relation(fields: [droneId], references: [id])
+  areaGeoJSON   Json
+  altitude      Float
+  pattern       String         // perimeter, crosshatch, etc.
+  startTime     DateTime?
+  endTime       DateTime?
+
+  report        SurveyReport?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model SurveyReport {
+  id         String   @id @default(cuid())
+  missionId  String   @unique
+  mission    Mission  @relation(fields: [missionId], references: [id])
+  duration   Int      // minutes
+  distance   Float    // kilometers
+  coverage   Float    // sq. km
+
+  createdAt  DateTime @default(now())
+}
+
+enum DroneStatus {
+  AVAILABLE
+  IN_MISSION
+  OFFLINE
+}
+
+enum MissionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ABORTED
+}
